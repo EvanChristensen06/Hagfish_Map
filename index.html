@@ -1,0 +1,2923 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/Hagfish_occurrences_1.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_ESRIStandard_0');
+        map.getPane('pane_ESRIStandard_0').style.zIndex = 400;
+        var layer_ESRIStandard_0 = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            pane: 'pane_ESRIStandard_0',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_ESRIStandard_0;
+        map.addLayer(layer_ESRIStandard_0);
+        function pop_Hagfish_occurrences_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['gbifID'] !== null ? autolinker.link(String(feature.properties['gbifID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Accepted Species Name'] !== null ? autolinker.link(String(feature.properties['Accepted Species Name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['accessRights'] !== null ? autolinker.link(String(feature.properties['accessRights']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['bibliographicCitation'] !== null ? autolinker.link(String(feature.properties['bibliographicCitation']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['language'] !== null ? autolinker.link(String(feature.properties['language']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['license'] !== null ? autolinker.link(String(feature.properties['license']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['modified'] !== null ? autolinker.link(String(feature.properties['modified']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['publisher'] !== null ? autolinker.link(String(feature.properties['publisher']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['references'] !== null ? autolinker.link(String(feature.properties['references']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['rightsHolder'] !== null ? autolinker.link(String(feature.properties['rightsHolder']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['type'] !== null ? autolinker.link(String(feature.properties['type']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['institutionID'] !== null ? autolinker.link(String(feature.properties['institutionID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['collectionID'] !== null ? autolinker.link(String(feature.properties['collectionID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['datasetID'] !== null ? autolinker.link(String(feature.properties['datasetID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['institutionCode'] !== null ? autolinker.link(String(feature.properties['institutionCode']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['collectionCode'] !== null ? autolinker.link(String(feature.properties['collectionCode']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['datasetName'] !== null ? autolinker.link(String(feature.properties['datasetName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ownerInstitutionCode'] !== null ? autolinker.link(String(feature.properties['ownerInstitutionCode']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['basisOfRecord'] !== null ? autolinker.link(String(feature.properties['basisOfRecord']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['informationWithheld'] !== null ? autolinker.link(String(feature.properties['informationWithheld']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['dataGeneralizations'] !== null ? autolinker.link(String(feature.properties['dataGeneralizations']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['dynamicProperties'] !== null ? autolinker.link(String(feature.properties['dynamicProperties']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['occurrenceID'] !== null ? autolinker.link(String(feature.properties['occurrenceID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['catalogNumber'] !== null ? autolinker.link(String(feature.properties['catalogNumber']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['recordNumber'] !== null ? autolinker.link(String(feature.properties['recordNumber']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['recordedBy'] !== null ? autolinker.link(String(feature.properties['recordedBy']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['recordedByID'] !== null ? autolinker.link(String(feature.properties['recordedByID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['individualCount'] !== null ? autolinker.link(String(feature.properties['individualCount']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['organismQuantity'] !== null ? autolinker.link(String(feature.properties['organismQuantity']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['organismQuantityType'] !== null ? autolinker.link(String(feature.properties['organismQuantityType']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['sex'] !== null ? autolinker.link(String(feature.properties['sex']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['lifeStage'] !== null ? autolinker.link(String(feature.properties['lifeStage']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['reproductiveCondition'] !== null ? autolinker.link(String(feature.properties['reproductiveCondition']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['caste'] !== null ? autolinker.link(String(feature.properties['caste']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['behavior'] !== null ? autolinker.link(String(feature.properties['behavior']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['vitality'] !== null ? autolinker.link(String(feature.properties['vitality']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['establishmentMeans'] !== null ? autolinker.link(String(feature.properties['establishmentMeans']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['degreeOfEstablishment'] !== null ? autolinker.link(String(feature.properties['degreeOfEstablishment']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['pathway'] !== null ? autolinker.link(String(feature.properties['pathway']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['georeferenceVerificationStatus'] !== null ? autolinker.link(String(feature.properties['georeferenceVerificationStatus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['occurrenceStatus'] !== null ? autolinker.link(String(feature.properties['occurrenceStatus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['preparations'] !== null ? autolinker.link(String(feature.properties['preparations']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['disposition'] !== null ? autolinker.link(String(feature.properties['disposition']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['associatedOccurrences'] !== null ? autolinker.link(String(feature.properties['associatedOccurrences']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['associatedReferences'] !== null ? autolinker.link(String(feature.properties['associatedReferences']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['associatedSequences'] !== null ? autolinker.link(String(feature.properties['associatedSequences']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['associatedTaxa'] !== null ? autolinker.link(String(feature.properties['associatedTaxa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['otherCatalogNumbers'] !== null ? autolinker.link(String(feature.properties['otherCatalogNumbers']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['occurrenceRemarks'] !== null ? autolinker.link(String(feature.properties['occurrenceRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['organismID'] !== null ? autolinker.link(String(feature.properties['organismID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['organismName'] !== null ? autolinker.link(String(feature.properties['organismName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['organismScope'] !== null ? autolinker.link(String(feature.properties['organismScope']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['associatedOrganisms'] !== null ? autolinker.link(String(feature.properties['associatedOrganisms']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['previousIdentifications'] !== null ? autolinker.link(String(feature.properties['previousIdentifications']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['organismRemarks'] !== null ? autolinker.link(String(feature.properties['organismRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['materialEntityID'] !== null ? autolinker.link(String(feature.properties['materialEntityID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['materialEntityRemarks'] !== null ? autolinker.link(String(feature.properties['materialEntityRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimLabel'] !== null ? autolinker.link(String(feature.properties['verbatimLabel']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['materialSampleID'] !== null ? autolinker.link(String(feature.properties['materialSampleID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['eventID'] !== null ? autolinker.link(String(feature.properties['eventID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['parentEventID'] !== null ? autolinker.link(String(feature.properties['parentEventID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['eventType'] !== null ? autolinker.link(String(feature.properties['eventType']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fieldNumber'] !== null ? autolinker.link(String(feature.properties['fieldNumber']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['eventDate'] !== null ? autolinker.link(String(feature.properties['eventDate']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['eventTime'] !== null ? autolinker.link(String(feature.properties['eventTime']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['startDayOfYear'] !== null ? autolinker.link(String(feature.properties['startDayOfYear']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['endDayOfYear'] !== null ? autolinker.link(String(feature.properties['endDayOfYear']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['year'] !== null ? autolinker.link(String(feature.properties['year']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['month'] !== null ? autolinker.link(String(feature.properties['month']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['day'] !== null ? autolinker.link(String(feature.properties['day']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimEventDate'] !== null ? autolinker.link(String(feature.properties['verbatimEventDate']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['habitat'] !== null ? autolinker.link(String(feature.properties['habitat']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['samplingProtocol'] !== null ? autolinker.link(String(feature.properties['samplingProtocol']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['sampleSizeValue'] !== null ? autolinker.link(String(feature.properties['sampleSizeValue']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['sampleSizeUnit'] !== null ? autolinker.link(String(feature.properties['sampleSizeUnit']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['samplingEffort'] !== null ? autolinker.link(String(feature.properties['samplingEffort']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fieldNotes'] !== null ? autolinker.link(String(feature.properties['fieldNotes']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['eventRemarks'] !== null ? autolinker.link(String(feature.properties['eventRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['locationID'] !== null ? autolinker.link(String(feature.properties['locationID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['higherGeographyID'] !== null ? autolinker.link(String(feature.properties['higherGeographyID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['higherGeography'] !== null ? autolinker.link(String(feature.properties['higherGeography']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['continent'] !== null ? autolinker.link(String(feature.properties['continent']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['waterBody'] !== null ? autolinker.link(String(feature.properties['waterBody']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['islandGroup'] !== null ? autolinker.link(String(feature.properties['islandGroup']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['island'] !== null ? autolinker.link(String(feature.properties['island']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['countryCode'] !== null ? autolinker.link(String(feature.properties['countryCode']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['stateProvince'] !== null ? autolinker.link(String(feature.properties['stateProvince']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['county'] !== null ? autolinker.link(String(feature.properties['county']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['municipality'] !== null ? autolinker.link(String(feature.properties['municipality']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['locality'] !== null ? autolinker.link(String(feature.properties['locality']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimLocality'] !== null ? autolinker.link(String(feature.properties['verbatimLocality']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimElevation'] !== null ? autolinker.link(String(feature.properties['verbatimElevation']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verticalDatum'] !== null ? autolinker.link(String(feature.properties['verticalDatum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimDepth'] !== null ? autolinker.link(String(feature.properties['verbatimDepth']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['minimumDistanceAboveSurfaceInMeters'] !== null ? autolinker.link(String(feature.properties['minimumDistanceAboveSurfaceInMeters']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['maximumDistanceAboveSurfaceInMeters'] !== null ? autolinker.link(String(feature.properties['maximumDistanceAboveSurfaceInMeters']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['locationAccordingTo'] !== null ? autolinker.link(String(feature.properties['locationAccordingTo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['locationRemarks'] !== null ? autolinker.link(String(feature.properties['locationRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['decimalLatitude'] !== null ? autolinker.link(String(feature.properties['decimalLatitude']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['decimalLongitude'] !== null ? autolinker.link(String(feature.properties['decimalLongitude']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['coordinateUncertaintyInMeters'] !== null ? autolinker.link(String(feature.properties['coordinateUncertaintyInMeters']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['coordinatePrecision'] !== null ? autolinker.link(String(feature.properties['coordinatePrecision']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['pointRadiusSpatialFit'] !== null ? autolinker.link(String(feature.properties['pointRadiusSpatialFit']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimCoordinateSystem'] !== null ? autolinker.link(String(feature.properties['verbatimCoordinateSystem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimSRS'] !== null ? autolinker.link(String(feature.properties['verbatimSRS']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['footprintWKT'] !== null ? autolinker.link(String(feature.properties['footprintWKT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['footprintSRS'] !== null ? autolinker.link(String(feature.properties['footprintSRS']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['footprintSpatialFit'] !== null ? autolinker.link(String(feature.properties['footprintSpatialFit']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['georeferencedBy'] !== null ? autolinker.link(String(feature.properties['georeferencedBy']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['georeferencedDate'] !== null ? autolinker.link(String(feature.properties['georeferencedDate']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['georeferenceProtocol'] !== null ? autolinker.link(String(feature.properties['georeferenceProtocol']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['georeferenceSources'] !== null ? autolinker.link(String(feature.properties['georeferenceSources']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['georeferenceRemarks'] !== null ? autolinker.link(String(feature.properties['georeferenceRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['geologicalContextID'] !== null ? autolinker.link(String(feature.properties['geologicalContextID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['earliestEonOrLowestEonothem'] !== null ? autolinker.link(String(feature.properties['earliestEonOrLowestEonothem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['latestEonOrHighestEonothem'] !== null ? autolinker.link(String(feature.properties['latestEonOrHighestEonothem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['earliestEraOrLowestErathem'] !== null ? autolinker.link(String(feature.properties['earliestEraOrLowestErathem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['latestEraOrHighestErathem'] !== null ? autolinker.link(String(feature.properties['latestEraOrHighestErathem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['earliestPeriodOrLowestSystem'] !== null ? autolinker.link(String(feature.properties['earliestPeriodOrLowestSystem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['latestPeriodOrHighestSystem'] !== null ? autolinker.link(String(feature.properties['latestPeriodOrHighestSystem']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['earliestEpochOrLowestSeries'] !== null ? autolinker.link(String(feature.properties['earliestEpochOrLowestSeries']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['latestEpochOrHighestSeries'] !== null ? autolinker.link(String(feature.properties['latestEpochOrHighestSeries']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['earliestAgeOrLowestStage'] !== null ? autolinker.link(String(feature.properties['earliestAgeOrLowestStage']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['latestAgeOrHighestStage'] !== null ? autolinker.link(String(feature.properties['latestAgeOrHighestStage']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['lowestBiostratigraphicZone'] !== null ? autolinker.link(String(feature.properties['lowestBiostratigraphicZone']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['highestBiostratigraphicZone'] !== null ? autolinker.link(String(feature.properties['highestBiostratigraphicZone']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['lithostratigraphicTerms'] !== null ? autolinker.link(String(feature.properties['lithostratigraphicTerms']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['group'] !== null ? autolinker.link(String(feature.properties['group']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['formation'] !== null ? autolinker.link(String(feature.properties['formation']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['member'] !== null ? autolinker.link(String(feature.properties['member']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['bed'] !== null ? autolinker.link(String(feature.properties['bed']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identificationID'] !== null ? autolinker.link(String(feature.properties['identificationID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimIdentification'] !== null ? autolinker.link(String(feature.properties['verbatimIdentification']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identificationQualifier'] !== null ? autolinker.link(String(feature.properties['identificationQualifier']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['typeStatus'] !== null ? autolinker.link(String(feature.properties['typeStatus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identifiedBy'] !== null ? autolinker.link(String(feature.properties['identifiedBy']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identifiedByID'] !== null ? autolinker.link(String(feature.properties['identifiedByID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['dateIdentified'] !== null ? autolinker.link(String(feature.properties['dateIdentified']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identificationReferences'] !== null ? autolinker.link(String(feature.properties['identificationReferences']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identificationVerificationStatus'] !== null ? autolinker.link(String(feature.properties['identificationVerificationStatus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['identificationRemarks'] !== null ? autolinker.link(String(feature.properties['identificationRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['taxonID'] !== null ? autolinker.link(String(feature.properties['taxonID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['scientificNameID'] !== null ? autolinker.link(String(feature.properties['scientificNameID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['acceptedNameUsageID'] !== null ? autolinker.link(String(feature.properties['acceptedNameUsageID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['parentNameUsageID'] !== null ? autolinker.link(String(feature.properties['parentNameUsageID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['originalNameUsageID'] !== null ? autolinker.link(String(feature.properties['originalNameUsageID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['nameAccordingToID'] !== null ? autolinker.link(String(feature.properties['nameAccordingToID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['namePublishedInID'] !== null ? autolinker.link(String(feature.properties['namePublishedInID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['taxonConceptID'] !== null ? autolinker.link(String(feature.properties['taxonConceptID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['scientificName'] !== null ? autolinker.link(String(feature.properties['scientificName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['acceptedNameUsage'] !== null ? autolinker.link(String(feature.properties['acceptedNameUsage']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['parentNameUsage'] !== null ? autolinker.link(String(feature.properties['parentNameUsage']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['originalNameUsage'] !== null ? autolinker.link(String(feature.properties['originalNameUsage']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['nameAccordingTo'] !== null ? autolinker.link(String(feature.properties['nameAccordingTo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['namePublishedIn'] !== null ? autolinker.link(String(feature.properties['namePublishedIn']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['namePublishedInYear'] !== null ? autolinker.link(String(feature.properties['namePublishedInYear']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['higherClassification'] !== null ? autolinker.link(String(feature.properties['higherClassification']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['kingdom'] !== null ? autolinker.link(String(feature.properties['kingdom']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['phylum'] !== null ? autolinker.link(String(feature.properties['phylum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['class'] !== null ? autolinker.link(String(feature.properties['class']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['order'] !== null ? autolinker.link(String(feature.properties['order']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['superfamily'] !== null ? autolinker.link(String(feature.properties['superfamily']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['family'] !== null ? autolinker.link(String(feature.properties['family']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['subfamily'] !== null ? autolinker.link(String(feature.properties['subfamily']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['tribe'] !== null ? autolinker.link(String(feature.properties['tribe']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['subtribe'] !== null ? autolinker.link(String(feature.properties['subtribe']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['genus'] !== null ? autolinker.link(String(feature.properties['genus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['genericName'] !== null ? autolinker.link(String(feature.properties['genericName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['subgenus'] !== null ? autolinker.link(String(feature.properties['subgenus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['infragenericEpithet'] !== null ? autolinker.link(String(feature.properties['infragenericEpithet']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['specificEpithet'] !== null ? autolinker.link(String(feature.properties['specificEpithet']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['infraspecificEpithet'] !== null ? autolinker.link(String(feature.properties['infraspecificEpithet']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['cultivarEpithet'] !== null ? autolinker.link(String(feature.properties['cultivarEpithet']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['taxonRank'] !== null ? autolinker.link(String(feature.properties['taxonRank']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimTaxonRank'] !== null ? autolinker.link(String(feature.properties['verbatimTaxonRank']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['vernacularName'] !== null ? autolinker.link(String(feature.properties['vernacularName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['nomenclaturalCode'] !== null ? autolinker.link(String(feature.properties['nomenclaturalCode']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['taxonomicStatus'] !== null ? autolinker.link(String(feature.properties['taxonomicStatus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['nomenclaturalStatus'] !== null ? autolinker.link(String(feature.properties['nomenclaturalStatus']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['taxonRemarks'] !== null ? autolinker.link(String(feature.properties['taxonRemarks']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['datasetKey'] !== null ? autolinker.link(String(feature.properties['datasetKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['publishingCountry'] !== null ? autolinker.link(String(feature.properties['publishingCountry']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['lastInterpreted'] !== null ? autolinker.link(String(feature.properties['lastInterpreted']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['elevation'] !== null ? autolinker.link(String(feature.properties['elevation']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['elevationAccuracy'] !== null ? autolinker.link(String(feature.properties['elevationAccuracy']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['depth'] !== null ? autolinker.link(String(feature.properties['depth']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['depthAccuracy'] !== null ? autolinker.link(String(feature.properties['depthAccuracy']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['distanceFromCentroidInMeters'] !== null ? autolinker.link(String(feature.properties['distanceFromCentroidInMeters']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['issue'] !== null ? autolinker.link(String(feature.properties['issue']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['mediaType'] !== null ? autolinker.link(String(feature.properties['mediaType']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['hasCoordinate'] !== null ? autolinker.link(String(feature.properties['hasCoordinate']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['hasGeospatialIssues'] !== null ? autolinker.link(String(feature.properties['hasGeospatialIssues']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['taxonKey'] !== null ? autolinker.link(String(feature.properties['taxonKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['acceptedTaxonKey'] !== null ? autolinker.link(String(feature.properties['acceptedTaxonKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['kingdomKey'] !== null ? autolinker.link(String(feature.properties['kingdomKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['phylumKey'] !== null ? autolinker.link(String(feature.properties['phylumKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['classKey'] !== null ? autolinker.link(String(feature.properties['classKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['orderKey'] !== null ? autolinker.link(String(feature.properties['orderKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['familyKey'] !== null ? autolinker.link(String(feature.properties['familyKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['genusKey'] !== null ? autolinker.link(String(feature.properties['genusKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['subgenusKey'] !== null ? autolinker.link(String(feature.properties['subgenusKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['speciesKey'] !== null ? autolinker.link(String(feature.properties['speciesKey']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['species'] !== null ? autolinker.link(String(feature.properties['species']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['acceptedScientificName'] !== null ? autolinker.link(String(feature.properties['acceptedScientificName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['verbatimScientificName'] !== null ? autolinker.link(String(feature.properties['verbatimScientificName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['typifiedName'] !== null ? autolinker.link(String(feature.properties['typifiedName']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['protocol'] !== null ? autolinker.link(String(feature.properties['protocol']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['lastParsed'] !== null ? autolinker.link(String(feature.properties['lastParsed']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['lastCrawled'] !== null ? autolinker.link(String(feature.properties['lastCrawled']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['repatriated'] !== null ? autolinker.link(String(feature.properties['repatriated']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['relativeOrganismQuantity'] !== null ? autolinker.link(String(feature.properties['relativeOrganismQuantity']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['projectId'] !== null ? autolinker.link(String(feature.properties['projectId']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['isSequenced'] !== null ? autolinker.link(String(feature.properties['isSequenced']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['gbifRegion'] !== null ? autolinker.link(String(feature.properties['gbifRegion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['publishedByGbifRegion'] !== null ? autolinker.link(String(feature.properties['publishedByGbifRegion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level0Gid'] !== null ? autolinker.link(String(feature.properties['level0Gid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level0Name'] !== null ? autolinker.link(String(feature.properties['level0Name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level1Gid'] !== null ? autolinker.link(String(feature.properties['level1Gid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level1Name'] !== null ? autolinker.link(String(feature.properties['level1Name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level2Gid'] !== null ? autolinker.link(String(feature.properties['level2Gid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level2Name'] !== null ? autolinker.link(String(feature.properties['level2Name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level3Gid'] !== null ? autolinker.link(String(feature.properties['level3Gid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['level3Name'] !== null ? autolinker.link(String(feature.properties['level3Name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['iucnRedListCategory'] !== null ? autolinker.link(String(feature.properties['iucnRedListCategory']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Hagfish_occurrences_1_0(feature) {
+            switch(String(feature.properties['Accepted Species Name'])) {
+                case ' ':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(166,97,26,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus ':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(168,101,30,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus alastairi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(171,105,34,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus albiderma':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(173,109,38,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus ancon':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(175,113,42,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus atami':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(178,117,46,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus bischoffii':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(180,121,50,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus bobwisneri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(182,125,54,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus burgeri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(185,129,58,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus caribbeaus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(187,133,62,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus carlhubbsi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(189,137,66,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus cheni':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(192,141,70,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus chinensis':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(194,145,74,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus cirrhatus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(196,148,79,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus cryptus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(199,152,83,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus curtissjamesi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,156,87,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus deani':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,160,91,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus decatrema':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,164,95,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus fernholmi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,168,99,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus fritzi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(210,172,103,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus goliath':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(213,176,107,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus gomoni':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(215,180,111,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus goslinei':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(217,184,115,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus grouseri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(220,188,119,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus hexatrema':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,192,123,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus indrambaryai':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(223,195,127,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus laurahubbsae':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,197,132,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus laurahubbsi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(225,199,137,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus longipinnis':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,201,142,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus luzonicus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,203,147,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus mcconnaugheyi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(228,205,152,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus mccoskeri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,208,157,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus mendozai':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(230,210,162,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus menezesi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,212,167,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus minor':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(232,214,172,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus moki':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(232,216,176,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus multidens':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(233,218,181,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus nanii':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(234,220,186,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus nelsoni':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(235,222,191,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus octatrema':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,224,196,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus okinoseanus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,226,201,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus poicilus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(238,228,206,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus polytrema':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(239,230,211,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus profundus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,233,216,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus sheni':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(241,235,221,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus sinus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(241,237,225,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus springeri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(242,239,230,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus stoutii':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(243,241,235,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus strahani':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(244,243,240,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus strickrotti':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(245,245,245,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus taiwanae':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,243,243,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus walkeri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(235,242,241,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus wayuu':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,240,239,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus wisneri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,238,237,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Eptatretus yangi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(221,237,234,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine ':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(216,235,232,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine acutifrons':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(212,234,230,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine affinis':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(207,232,228,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine atlantica':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(202,230,226,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine australis':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(197,229,224,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine capensis':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(192,227,222,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine circifrons':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(188,225,220,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine debueni':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(183,224,217,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine dombeyi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(178,222,215,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine dorsum':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(173,221,213,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine fernholmi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(169,219,211,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine formosana':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(164,217,209,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine garmani':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(159,216,207,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine glutinosa':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(154,214,205,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine greggi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(149,212,203,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine hubbsi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(145,211,200,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine hubbsoides':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(140,209,198,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine ios':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(135,207,196,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine jespersenae':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(130,206,194,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine knappi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,204,191,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine kuoi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(120,201,188,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine limosa':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,198,185,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine martinii':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(110,195,182,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine mccoskeri':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(105,192,178,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine mcmillanae':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(99,189,175,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine paucidens':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(94,186,172,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine pequenoi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(89,183,169,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine phantasma':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(84,180,165,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine robinsi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(79,177,162,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine robinsorum':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(74,174,159,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxine sotoi':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(68,171,155,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Myxineidus gononorum':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(63,168,152,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Nemamyxine elongata':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(58,165,149,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Nemamyxine kreffti':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(53,162,146,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Neomyxine ':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(48,159,142,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Neomyxine biniplicata':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(42,157,139,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Neomyxine caesiovitta':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(37,154,136,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Notomyxine ':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(32,151,133,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Notomyxine tridentiger':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(27,148,129,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Rubicundus ':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(22,145,126,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Rubicundus lakeside':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(17,142,123,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Rubicundus lopheliae':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(11,139,120,1.0)',
+                interactive: false,
+            }
+                    break;
+                case 'Rubicundus rubicundus':
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(6,136,116,1.0)',
+                interactive: false,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Hagfish_occurrences_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(1,133,113,1.0)',
+                interactive: false,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Hagfish_occurrences_1');
+        map.getPane('pane_Hagfish_occurrences_1').style.zIndex = 401;
+        map.getPane('pane_Hagfish_occurrences_1').style['mix-blend-mode'] = 'normal';
+        var layer_Hagfish_occurrences_1 = new L.geoJson(json_Hagfish_occurrences_1, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Hagfish_occurrences_1',
+            layerName: 'layer_Hagfish_occurrences_1',
+            pane: 'pane_Hagfish_occurrences_1',
+            onEachFeature: pop_Hagfish_occurrences_1,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Hagfish_occurrences_1_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Hagfish_occurrences_1);
+        map.addLayer(layer_Hagfish_occurrences_1);
+        var overlaysTree = [
+            {label: 'Hagfish_occurrences<br /><table><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_0.png" /></td><td> </td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretus1.png" /></td><td>Eptatretus </td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusalastairi2.png" /></td><td>Eptatretus alastairi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusalbiderma3.png" /></td><td>Eptatretus albiderma</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusancon4.png" /></td><td>Eptatretus ancon</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusatami5.png" /></td><td>Eptatretus atami</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusbischoffii6.png" /></td><td>Eptatretus bischoffii</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusbobwisneri7.png" /></td><td>Eptatretus bobwisneri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusburgeri8.png" /></td><td>Eptatretus burgeri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuscaribbeaus9.png" /></td><td>Eptatretus caribbeaus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuscarlhubbsi10.png" /></td><td>Eptatretus carlhubbsi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuscheni11.png" /></td><td>Eptatretus cheni</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuschinensis12.png" /></td><td>Eptatretus chinensis</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuscirrhatus13.png" /></td><td>Eptatretus cirrhatus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuscryptus14.png" /></td><td>Eptatretus cryptus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuscurtissjamesi15.png" /></td><td>Eptatretus curtissjamesi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusdeani16.png" /></td><td>Eptatretus deani</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusdecatrema17.png" /></td><td>Eptatretus decatrema</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusfernholmi18.png" /></td><td>Eptatretus fernholmi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusfritzi19.png" /></td><td>Eptatretus fritzi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusgoliath20.png" /></td><td>Eptatretus goliath</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusgomoni21.png" /></td><td>Eptatretus gomoni</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusgoslinei22.png" /></td><td>Eptatretus goslinei</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusgrouseri23.png" /></td><td>Eptatretus grouseri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretushexatrema24.png" /></td><td>Eptatretus hexatrema</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusindrambaryai25.png" /></td><td>Eptatretus indrambaryai</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuslaurahubbsae26.png" /></td><td>Eptatretus laurahubbsae</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuslaurahubbsi27.png" /></td><td>Eptatretus laurahubbsi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuslongipinnis28.png" /></td><td>Eptatretus longipinnis</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusluzonicus29.png" /></td><td>Eptatretus luzonicus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusmcconnaugheyi30.png" /></td><td>Eptatretus mcconnaugheyi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusmccoskeri31.png" /></td><td>Eptatretus mccoskeri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusmendozai32.png" /></td><td>Eptatretus mendozai</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusmenezesi33.png" /></td><td>Eptatretus menezesi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusminor34.png" /></td><td>Eptatretus minor</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusmoki35.png" /></td><td>Eptatretus moki</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusmultidens36.png" /></td><td>Eptatretus multidens</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusnanii37.png" /></td><td>Eptatretus nanii</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusnelsoni38.png" /></td><td>Eptatretus nelsoni</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusoctatrema39.png" /></td><td>Eptatretus octatrema</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusokinoseanus40.png" /></td><td>Eptatretus okinoseanus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuspoicilus41.png" /></td><td>Eptatretus poicilus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuspolytrema42.png" /></td><td>Eptatretus polytrema</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusprofundus43.png" /></td><td>Eptatretus profundus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretussheni44.png" /></td><td>Eptatretus sheni</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretussinus45.png" /></td><td>Eptatretus sinus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusspringeri46.png" /></td><td>Eptatretus springeri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusstoutii47.png" /></td><td>Eptatretus stoutii</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusstrahani48.png" /></td><td>Eptatretus strahani</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusstrickrotti49.png" /></td><td>Eptatretus strickrotti</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretustaiwanae50.png" /></td><td>Eptatretus taiwanae</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuswalkeri51.png" /></td><td>Eptatretus walkeri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuswayuu52.png" /></td><td>Eptatretus wayuu</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretuswisneri53.png" /></td><td>Eptatretus wisneri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Eptatretusyangi54.png" /></td><td>Eptatretus yangi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxine55.png" /></td><td>Myxine </td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineacutifrons56.png" /></td><td>Myxine acutifrons</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineaffinis57.png" /></td><td>Myxine affinis</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineatlantica58.png" /></td><td>Myxine atlantica</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineaustralis59.png" /></td><td>Myxine australis</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinecapensis60.png" /></td><td>Myxine capensis</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinecircifrons61.png" /></td><td>Myxine circifrons</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinedebueni62.png" /></td><td>Myxine debueni</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinedombeyi63.png" /></td><td>Myxine dombeyi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinedorsum64.png" /></td><td>Myxine dorsum</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinefernholmi65.png" /></td><td>Myxine fernholmi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineformosana66.png" /></td><td>Myxine formosana</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinegarmani67.png" /></td><td>Myxine garmani</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineglutinosa68.png" /></td><td>Myxine glutinosa</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinegreggi69.png" /></td><td>Myxine greggi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinehubbsi70.png" /></td><td>Myxine hubbsi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinehubbsoides71.png" /></td><td>Myxine hubbsoides</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineios72.png" /></td><td>Myxine ios</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinejespersenae73.png" /></td><td>Myxine jespersenae</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineknappi74.png" /></td><td>Myxine knappi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinekuoi75.png" /></td><td>Myxine kuoi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinelimosa76.png" /></td><td>Myxine limosa</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinemartinii77.png" /></td><td>Myxine martinii</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinemccoskeri78.png" /></td><td>Myxine mccoskeri</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinemcmillanae79.png" /></td><td>Myxine mcmillanae</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinepaucidens80.png" /></td><td>Myxine paucidens</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinepequenoi81.png" /></td><td>Myxine pequenoi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinephantasma82.png" /></td><td>Myxine phantasma</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinerobinsi83.png" /></td><td>Myxine robinsi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinerobinsorum84.png" /></td><td>Myxine robinsorum</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxinesotoi85.png" /></td><td>Myxine sotoi</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Myxineidusgononorum86.png" /></td><td>Myxineidus gononorum</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Nemamyxineelongata87.png" /></td><td>Nemamyxine elongata</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Nemamyxinekreffti88.png" /></td><td>Nemamyxine kreffti</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Neomyxine89.png" /></td><td>Neomyxine </td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Neomyxinebiniplicata90.png" /></td><td>Neomyxine biniplicata</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Neomyxinecaesiovitta91.png" /></td><td>Neomyxine caesiovitta</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Notomyxine92.png" /></td><td>Notomyxine </td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Notomyxinetridentiger93.png" /></td><td>Notomyxine tridentiger</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Rubicundus94.png" /></td><td>Rubicundus </td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Rubicunduslakeside95.png" /></td><td>Rubicundus lakeside</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Rubicunduslopheliae96.png" /></td><td>Rubicundus lopheliae</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_Rubicundusrubicundus97.png" /></td><td>Rubicundus rubicundus</td></tr><tr><td style="text-align: center;"><img src="legend/Hagfish_occurrences_1_98.png" /></td><td></td></tr></table>', layer: layer_Hagfish_occurrences_1},
+            {label: "ESRI Standard", layer: layer_ESRIStandard_0, radioGroup: 'bm' },]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+		document.addEventListener("DOMContentLoaded", function() {
+            // set new Layers List height which considers toggle icon
+            function newLayersListHeight() {
+                var layerScrollbarElement = document.querySelector('.leaflet-control-layers-scrollbar');
+                if (layerScrollbarElement) {
+                    var layersListElement = document.querySelector('.leaflet-control-layers-list');
+                    var originalHeight = layersListElement.style.height 
+                        || window.getComputedStyle(layersListElement).height;
+                    var newHeight = parseFloat(originalHeight) - 50;
+                    layersListElement.style.height = newHeight + 'px';
+                }
+            }
+            var isLayersListExpanded = true;
+            var controlLayersElement = document.querySelector('.leaflet-control-layers');
+            var toggleLayerControl = document.querySelector('.leaflet-control-layers-toggle');
+            // toggle Collapsed/Expanded and apply new Layers List height
+            toggleLayerControl.addEventListener('click', function() {
+                if (isLayersListExpanded) {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                } else {
+                    controlLayersElement.classList.add('leaflet-control-layers-expanded');
+                }
+                isLayersListExpanded = !isLayersListExpanded;
+                newLayersListHeight()
+            });	
+			// apply new Layers List height if toggle layerstree
+			if (controlLayersElement) {
+				controlLayersElement.addEventListener('click', function(event) {
+					var toggleLayerHeaderPointer = event.target.closest('.leaflet-layerstree-header-pointer span');
+					if (toggleLayerHeaderPointer) {
+						newLayersListHeight();
+					}
+				});
+			}
+            // Collapsed/Expanded at Start to apply new height
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            // Collapsed touch/small screen
+            var isSmallScreen = window.innerWidth < 650;
+            if (isSmallScreen) {
+                setTimeout(function() {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                    isLayersListExpanded = !isLayersListExpanded;
+                }, 500);
+            }  
+        });       
+        setBounds();
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"georeferencedBy": "str","georeferenceVerificationStatus": "str","georeferenceSources": "str","datasetName": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_georeferencedBy = document.createElement('div');
+            div_georeferencedBy.id = "div_georeferencedBy";
+            div_georeferencedBy.className= "filterselect";
+            document.getElementById("menu").appendChild(div_georeferencedBy);
+            sel_georeferencedBy = document.createElement('select');
+            sel_georeferencedBy.multiple = true;
+            sel_georeferencedBy.size = 10;
+            sel_georeferencedBy.id = "sel_georeferencedBy";
+            var georeferencedBy_options_str = "<option value='' unselected></option>";
+            sel_georeferencedBy.onchange = function(){filterFunc()};
+            georeferencedBy_options_str  += '<option value="NULL">NULL</option>';
+            georeferencedBy_options_str  += '<option value="Andrew D. Williston">Andrew D. Williston</option>';
+            georeferencedBy_options_str  += '<option value="Anthony Bernard">Anthony Bernard</option>';
+            georeferencedBy_options_str  += '<option value="Benito Santos">Benito Santos</option>';
+            georeferencedBy_options_str  += '<option value="Bernard Mackenzie">Bernard Mackenzie</option>';
+            georeferencedBy_options_str  += '<option value="Brendan Haley">Brendan Haley</option>';
+            georeferencedBy_options_str  += '<option value="Camilo Abella">Camilo Abella</option>';
+            georeferencedBy_options_str  += '<option value="Christopher H. Martin">Christopher H. Martin</option>';
+            georeferencedBy_options_str  += '<option value="Collection Manager">Collection Manager</option>';
+            georeferencedBy_options_str  += '<option value="F.J.A. Slieker">F.J.A. Slieker</option>';
+            georeferencedBy_options_str  += '<option value="Fish Herder">Fish Herder</option>';
+            georeferencedBy_options_str  += '<option value="G. Brown Goode">G. Brown Goode</option>';
+            georeferencedBy_options_str  += '<option value="Herrera Juliana">Herrera Juliana</option>';
+            georeferencedBy_options_str  += '<option value="Isaac Firesmith">Isaac Firesmith</option>';
+            georeferencedBy_options_str  += '<option value="Jeremy Kisala">Jeremy Kisala</option>';
+            georeferencedBy_options_str  += '<option value="Josh R. Pletcher">Josh R. Pletcher</option>';
+            georeferencedBy_options_str  += '<option value="KM">KM</option>';
+            georeferencedBy_options_str  += '<option value="Katie Shink">Katie Shink</option>';
+            georeferencedBy_options_str  += '<option value="Katy Wichman">Katy Wichman</option>';
+            georeferencedBy_options_str  += '<option value="Kristina H. Yamamoto">Kristina H. Yamamoto</option>';
+            georeferencedBy_options_str  += '<option value="Laura C. Lukas">Laura C. Lukas</option>';
+            georeferencedBy_options_str  += '<option value="Laura Porturas">Laura Porturas</option>';
+            georeferencedBy_options_str  += '<option value="Lindsay C. Roupe">Lindsay C. Roupe</option>';
+            georeferencedBy_options_str  += '<option value="Meaghan H. Sorce">Meaghan H. Sorce</option>';
+            georeferencedBy_options_str  += '<option value="Megan Roberson">Megan Roberson</option>';
+            georeferencedBy_options_str  += '<option value="Michelle Vanderwel">Michelle Vanderwel</option>';
+            georeferencedBy_options_str  += '<option value="Michelle Vanderwel, FishNet 2 Collaborative Georeferencing Project 2012-2015 (NSF DBI-1202953)">Michelle Vanderwel, FishNet 2 Collaborative Georeferencing Project 2012-2015 (NSF DBI-1202953)</option>';
+            georeferencedBy_options_str  += '<option value="Paul DeSalles">Paul DeSalles</option>';
+            georeferencedBy_options_str  += '<option value="Paul DeSalles, FishNet 2 Collaborative Georeferencing Project 2012-2015 (NSF DBI-1202953)">Paul DeSalles, FishNet 2 Collaborative Georeferencing Project 2012-2015 (NSF DBI-1202953)</option>';
+            georeferencedBy_options_str  += '<option value="R. L. Hunter">R. L. Hunter</option>';
+            georeferencedBy_options_str  += '<option value="Richards, Eilidh">Richards, Eilidh</option>';
+            georeferencedBy_options_str  += '<option value="Suellen Jacob">Suellen Jacob</option>';
+            georeferencedBy_options_str  += '<option value="Sydney D. Guthrie">Sydney D. Guthrie</option>';
+            georeferencedBy_options_str  += '<option value="Willem Coetzer">Willem Coetzer</option>';
+            georeferencedBy_options_str  += '<option value="Zion H. Creech">Zion H. Creech</option>';
+            georeferencedBy_options_str  += '<option value="Zoe Scholz">Zoe Scholz</option>';
+            georeferencedBy_options_str  += '<option value="[no agent data]">[no agent data]</option>';
+            georeferencedBy_options_str  += '<option value="beniorkino">beniorkino</option>';
+            georeferencedBy_options_str  += '<option value="beniorkino, FishNet 2 Collaborative Georeferencing Project 2012-2015 (NSF DBI-1202953)">beniorkino, FishNet 2 Collaborative Georeferencing Project 2012-2015 (NSF DBI-1202953)</option>';
+            georeferencedBy_options_str  += '<option value="unknown">unknown</option>';
+            sel_georeferencedBy.innerHTML = georeferencedBy_options_str;
+            div_georeferencedBy.appendChild(sel_georeferencedBy);
+            var lab_georeferencedBy = document.createElement('div');
+            lab_georeferencedBy.innerHTML = 'georeferencedBy';
+            lab_georeferencedBy.className = 'filterlabel';
+            div_georeferencedBy.appendChild(lab_georeferencedBy);
+            var reset_georeferencedBy = document.createElement('div');
+            reset_georeferencedBy.innerHTML = 'clear filter';
+            reset_georeferencedBy.className = 'filterlabel';
+            reset_georeferencedBy.onclick = function() {
+                var options = document.getElementById("sel_georeferencedBy").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_georeferencedBy.appendChild(reset_georeferencedBy);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_georeferenceVerificationStatus = document.createElement('div');
+            div_georeferenceVerificationStatus.id = "div_georeferenceVerificationStatus";
+            div_georeferenceVerificationStatus.className= "filterselect";
+            document.getElementById("menu").appendChild(div_georeferenceVerificationStatus);
+            sel_georeferenceVerificationStatus = document.createElement('select');
+            sel_georeferenceVerificationStatus.multiple = true;
+            sel_georeferenceVerificationStatus.size = 10;
+            sel_georeferenceVerificationStatus.id = "sel_georeferenceVerificationStatus";
+            var georeferenceVerificationStatus_options_str = "<option value='' unselected></option>";
+            sel_georeferenceVerificationStatus.onchange = function(){filterFunc()};
+            georeferenceVerificationStatus_options_str  += '<option value="NULL">NULL</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="Accepted">Accepted</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="CoGe_corrected_2015-02-04">CoGe_corrected_2015-02-04</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="CoGe_skipped_2015-02-04">CoGe_skipped_2015-02-04</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="Verified">Verified</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="accepted">accepted</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="requires verification">requires verification</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="unknown">unknown</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="unverified">unverified</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="verified by MCZ collection">verified by MCZ collection</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="verified by collector">verified by collector</option>';
+            georeferenceVerificationStatus_options_str  += '<option value="verified by curator">verified by curator</option>';
+            sel_georeferenceVerificationStatus.innerHTML = georeferenceVerificationStatus_options_str;
+            div_georeferenceVerificationStatus.appendChild(sel_georeferenceVerificationStatus);
+            var lab_georeferenceVerificationStatus = document.createElement('div');
+            lab_georeferenceVerificationStatus.innerHTML = 'georeferenceVerificationStatus';
+            lab_georeferenceVerificationStatus.className = 'filterlabel';
+            div_georeferenceVerificationStatus.appendChild(lab_georeferenceVerificationStatus);
+            var reset_georeferenceVerificationStatus = document.createElement('div');
+            reset_georeferenceVerificationStatus.innerHTML = 'clear filter';
+            reset_georeferenceVerificationStatus.className = 'filterlabel';
+            reset_georeferenceVerificationStatus.onclick = function() {
+                var options = document.getElementById("sel_georeferenceVerificationStatus").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_georeferenceVerificationStatus.appendChild(reset_georeferenceVerificationStatus);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_georeferenceSources = document.createElement('div');
+            div_georeferenceSources.id = "div_georeferenceSources";
+            div_georeferenceSources.className= "filterselect";
+            document.getElementById("menu").appendChild(div_georeferenceSources);
+            sel_georeferenceSources = document.createElement('select');
+            sel_georeferenceSources.multiple = true;
+            sel_georeferenceSources.size = 10;
+            sel_georeferenceSources.id = "sel_georeferenceSources";
+            var georeferenceSources_options_str = "<option value='' unselected></option>";
+            sel_georeferenceSources.onchange = function(){filterFunc()};
+            georeferenceSources_options_str  += '<option value="NULL">NULL</option>';
+            georeferenceSources_options_str  += '<option value="Arctos Coordinate Converter Input Values: datum=World Geodetic System 1984; dec_lat_deg=32; dec_lat_min=42.29; dec_lat_dir=N; dec_long_deg=117; dec_long_min=22.60; dec_long_dir=W; Max error calculated from distance between start and stop coordinates given with ship data; Ship GPS- Robert G. Sproul from Scripps">Arctos Coordinate Converter Input Values: datum=World Geodetic System 1984; dec_lat_deg=32; dec_lat_min=42.29; dec_lat_dir=N; dec_long_deg=117; dec_long_min=22.60; dec_long_dir=W; Max error calculated from distance between start and stop coordinates given with ship data; Ship GPS- Robert G. Sproul from Scripps</option>';
+            georeferenceSources_options_str  += '<option value="Biogeomancer, Point Radius">Biogeomancer, Point Radius</option>';
+            georeferenceSources_options_str  += '<option value="Coordinates from country centroid">Coordinates from country centroid</option>';
+            georeferenceSources_options_str  += '<option value="Coordinates from province centroid">Coordinates from province centroid</option>';
+            georeferenceSources_options_str  += '<option value="Coordinates taken from IZ locality 1037339. [MHS; 2021-02-16]">Coordinates taken from IZ locality 1037339. [MHS; 2021-02-16]</option>';
+            georeferenceSources_options_str  += '<option value="DeLorme Topo North America 9.0; GEOLocate - Google Hybrid">DeLorme Topo North America 9.0; GEOLocate - Google Hybrid</option>';
+            georeferenceSources_options_str  += '<option value="DeLorme Topo North America 9.0; GEOLocate - Google Streets">DeLorme Topo North America 9.0; GEOLocate - Google Streets</option>';
+            georeferenceSources_options_str  += '<option value="FishNet">FishNet</option>';
+            georeferenceSources_options_str  += '<option value="Fishing Ship GPS">Fishing Ship GPS</option>';
+            georeferenceSources_options_str  += '<option value="Fishnet2">Fishnet2</option>';
+            georeferenceSources_options_str  += '<option value="GEOLocate">GEOLocate</option>';
+            georeferenceSources_options_str  += '<option value="GEOLocate batch georeferencing, 2019-06-10">GEOLocate batch georeferencing, 2019-06-10</option>';
+            georeferenceSources_options_str  += '<option value="GeoLocate">GeoLocate</option>';
+            georeferenceSources_options_str  += '<option value="Geoposicionador">Geoposicionador</option>';
+            georeferenceSources_options_str  += '<option value="Geoposicionador, Garmin 12XL, 10">Geoposicionador, Garmin 12XL, 10</option>';
+            georeferenceSources_options_str  += '<option value="Google Maps. https://www.google.es/maps/place/42%C2%B029&apos;00.0%22S+72%C2%B046&apos;00.0%22W/@-42.4833333,-72.7688554,17z/data=!4m5!3m4!1s0x0:0x0!8m2!3d-42.4833333!4d-72.7666667">Google Maps. https://www.google.es/maps/place/42%C2%B029&apos;00.0%22S+72%C2%B046&apos;00.0%22W/@-42.4833333,-72.7688554,17z/data=!4m5!3m4!1s0x0:0x0!8m2!3d-42.4833333!4d-72.7666667</option>';
+            georeferenceSources_options_str  += '<option value="Instituto Geogr?�fico Agust?�n Codazzi. Departamento Administrativo Nacional de Estad?�stica. 2008. Cali, 1:100.000, Plancha 407B, Bogot?� D.C.">Instituto Geogr?�fico Agust?�n Codazzi. Departamento Administrativo Nacional de Estad?�stica. 2008. Cali, 1:100.000, Plancha 407B, Bogot?� D.C.</option>';
+            georeferenceSources_options_str  += '<option value="Map">Map</option>';
+            georeferenceSources_options_str  += '<option value="Mapa, INEGI, 1:250 000">Mapa, INEGI, 1:250 000</option>';
+            georeferenceSources_options_str  += '<option value="N/A">N/A</option>';
+            georeferenceSources_options_str  += '<option value="Online Gazetteer">Online Gazetteer</option>';
+            georeferenceSources_options_str  += '<option value="Original Field Notes/Label/Report">Original Field Notes/Label/Report</option>';
+            georeferenceSources_options_str  += '<option value="Provided georef">Provided georef</option>';
+            georeferenceSources_options_str  += '<option value="Terrain Navigator 3.02 USGS 1:24000">Terrain Navigator 3.02 USGS 1:24000</option>';
+            georeferenceSources_options_str  += '<option value="UNC-IMS ledger">UNC-IMS ledger</option>';
+            georeferenceSources_options_str  += '<option value="Verbatim coordinates from R/V Albatross station logs (see remarks)">Verbatim coordinates from R/V Albatross station logs (see remarks)</option>';
+            georeferenceSources_options_str  += '<option value="Verbatim coordinates from UNC-IMS Ledger">Verbatim coordinates from UNC-IMS Ledger</option>';
+            georeferenceSources_options_str  += '<option value="Verbatim coordinates from original field notes">Verbatim coordinates from original field notes</option>';
+            georeferenceSources_options_str  += '<option value="based on coordinated published in publication of description of Cottunculus torvus">based on coordinated published in publication of description of Cottunculus torvus</option>';
+            georeferenceSources_options_str  += '<option value="field coordinates">field coordinates</option>';
+            georeferenceSources_options_str  += '<option value="field coordinates, GPS">field coordinates, GPS</option>';
+            georeferenceSources_options_str  += '<option value="https://mapcarta.com/About_Mapcarta/">https://mapcarta.com/About_Mapcarta/</option>';
+            georeferenceSources_options_str  += '<option value="marineregions.org">marineregions.org</option>';
+            georeferenceSources_options_str  += '<option value="not recorded">not recorded</option>';
+            georeferenceSources_options_str  += '<option value="unknown">unknown</option>';
+            georeferenceSources_options_str  += '<option value="unspecified">unspecified</option>';
+            sel_georeferenceSources.innerHTML = georeferenceSources_options_str;
+            div_georeferenceSources.appendChild(sel_georeferenceSources);
+            var lab_georeferenceSources = document.createElement('div');
+            lab_georeferenceSources.innerHTML = 'georeferenceSources';
+            lab_georeferenceSources.className = 'filterlabel';
+            div_georeferenceSources.appendChild(lab_georeferenceSources);
+            var reset_georeferenceSources = document.createElement('div');
+            reset_georeferenceSources.innerHTML = 'clear filter';
+            reset_georeferenceSources.className = 'filterlabel';
+            reset_georeferenceSources.onclick = function() {
+                var options = document.getElementById("sel_georeferenceSources").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_georeferenceSources.appendChild(reset_georeferenceSources);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_datasetName = document.createElement('div');
+            div_datasetName.id = "div_datasetName";
+            div_datasetName.className= "filterselect";
+            document.getElementById("menu").appendChild(div_datasetName);
+            sel_datasetName = document.createElement('select');
+            sel_datasetName.multiple = true;
+            sel_datasetName.size = 10;
+            sel_datasetName.id = "sel_datasetName";
+            var datasetName_options_str = "<option value='' unselected></option>";
+            sel_datasetName.onchange = function(){filterFunc()};
+            datasetName_options_str  += '<option value="NULL">NULL</option>';
+            datasetName_options_str  += '<option value="1743-2010 National Marine Aquarium (NMA) United Kingdom Marine Fish Recording Scheme">1743-2010 National Marine Aquarium (NMA) United Kingdom Marine Fish Recording Scheme</option>';
+            datasetName_options_str  += '<option value="Actualizaci??n de la base de datos computarizada de la colecci??n ictiol??gica de la Universidad Aut??noma de Baja California">Actualizaci??n de la base de datos computarizada de la colecci??n ictiol??gica de la Universidad Aut??noma de Baja California</option>';
+            datasetName_options_str  += '<option value="An?�lisis comparativo de la capturabilidad y selectividad de redes de arrastre en pesquer?�as de crust?�ceos demersales">An?�lisis comparativo de la capturabilidad y selectividad de redes de arrastre en pesquer?�as de crust?�ceos demersales</option>';
+            datasetName_options_str  += '<option value="Artportalen">Artportalen</option>';
+            datasetName_options_str  += '<option value="Artsprosjekt_7-24_Scalidophora_i_Noreg">Artsprosjekt_7-24_Scalidophora_i_Noreg</option>';
+            datasetName_options_str  += '<option value="Asia-Pacific Dataset">Asia-Pacific Dataset</option>';
+            datasetName_options_str  += '<option value="Atlantic Reference Centre">Atlantic Reference Centre</option>';
+            datasetName_options_str  += '<option value="Auburn University Museum Fish Collection">Auburn University Museum Fish Collection</option>';
+            datasetName_options_str  += '<option value="Bay of Fundy Species List">Bay of Fundy Species List</option>';
+            datasetName_options_str  += '<option value="Beaty Biodiversity Museum Fish Collection">Beaty Biodiversity Museum Fish Collection</option>';
+            datasetName_options_str  += '<option value="Bishop Museum Fish Specimens">Bishop Museum Fish Specimens</option>';
+            datasetName_options_str  += '<option value="CERF">CERF</option>';
+            datasetName_options_str  += '<option value="Cole?�?�o Ictiol??gica (MNRJ), Museu Nacional(MN), Universidade Federal do Rio de Janeiro(UFRJ)">Cole?�?�o Ictiol??gica (MNRJ), Museu Nacional(MN), Universidade Federal do Rio de Janeiro(UFRJ)</option>';
+            datasetName_options_str  += '<option value="Cole?�?�o de Ictiologia do INPA">Cole?�?�o de Ictiologia do INPA</option>';
+            datasetName_options_str  += '<option value="Cole?�?�o de Ictiologia do MZUSP">Cole?�?�o de Ictiologia do MZUSP</option>';
+            datasetName_options_str  += '<option value="Cole?�?�o do Museu Oceanogr?�fico do Rei D. Carlos I">Cole?�?�o do Museu Oceanogr?�fico do Rei D. Carlos I</option>';
+            datasetName_options_str  += '<option value="Colecci??n de Fauna Marina del Centro Oceanogr?�fico de M?�laga (IEO-CSIC): CFM-IEOMA">Colecci??n de Fauna Marina del Centro Oceanogr?�fico de M?�laga (IEO-CSIC): CFM-IEOMA</option>';
+            datasetName_options_str  += '<option value="Colecci??n de fauna marina del Centro Oceanogr?�fico de Canarias">Colecci??n de fauna marina del Centro Oceanogr?�fico de Canarias</option>';
+            datasetName_options_str  += '<option value="Coleccion CDF MCCDRS">Coleccion CDF MCCDRS</option>';
+            datasetName_options_str  += '<option value="Computarizaci??n de la Colecci??n Nacional de Peces del Instituto de Biolog?�a UNAM">Computarizaci??n de la Colecci??n Nacional de Peces del Instituto de Biolog?�a UNAM</option>';
+            datasetName_options_str  += '<option value="DFO Quebec Region Biodiversity of the snow crab trawl survey in the St. Lawrence Estuary (2019)">DFO Quebec Region Biodiversity of the snow crab trawl survey in the St. Lawrence Estuary (2019)</option>';
+            datasetName_options_str  += '<option value="DFO Quebec Region Ecosystemic bottom trawl surveys">DFO Quebec Region Ecosystemic bottom trawl surveys</option>';
+            datasetName_options_str  += '<option value="DFO Quebec Region MLI museum collection">DFO Quebec Region MLI museum collection</option>';
+            datasetName_options_str  += '<option value="Digitalizaci??n y Sistematizaci??n de las Colecciones Biol??gicas Nacionales del Instituto de Biolog?�a, UNAM">Digitalizaci??n y Sistematizaci??n de las Colecciones Biol??gicas Nacionales del Instituto de Biolog?�a, UNAM</option>';
+            datasetName_options_str  += '<option value="Discovery Expedition Biological Reports">Discovery Expedition Biological Reports</option>';
+            datasetName_options_str  += '<option value="ECNASAP - East Coast North America Strategic Assessment">ECNASAP - East Coast North America Strategic Assessment</option>';
+            datasetName_options_str  += '<option value="Environmental Monitoring database (MOD) DNV">Environmental Monitoring database (MOD) DNV</option>';
+            datasetName_options_str  += '<option value="Estudio de Impacto Ambiental del ?�rea de Perforaci??n Exploratoria Costa Afuera COL-5">Estudio de Impacto Ambiental del ?�rea de Perforaci??n Exploratoria Costa Afuera COL-5</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n ac??stica de merluza com??n en la zona centro-sur, a??o 2000">Evaluaci??n ac??stica de merluza com??n en la zona centro-sur, a??o 2000</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n de estrategias de recuperaci??n en la pesquer?�a de merluza com??n">Evaluaci??n de estrategias de recuperaci??n en la pesquer?�a de merluza com??n</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n del desempe??o operativo de la nueva red de arrastre en pesquer?�as de crust?�ceos demersales">Evaluaci??n del desempe??o operativo de la nueva red de arrastre en pesquer?�as de crust?�ceos demersales</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de Langostino colorado de la V a VIII Regi??n, 1999">Evaluaci??n directa de Langostino colorado de la V a VIII Regi??n, 1999</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n Nailon entre la II y VIII Regiones, 1999">Evaluaci??n directa de camar??n Nailon entre la II y VIII Regiones, 1999</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon II y VIII Regiones, a??o 2006">Evaluaci??n directa de camar??n nailon II y VIII Regiones, a??o 2006</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2002">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2002</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2003">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2003</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2004">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2004</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2008">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2008</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2009">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2009</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2011">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2011</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2012">Evaluaci??n directa de camar??n nailon entre la II y VIII Regiones, a??o 2012</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon y gamba entre la II y VIII Regiones, a??o 2005">Evaluaci??n directa de camar??n nailon y gamba entre la II y VIII Regiones, a??o 2005</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de camar??n nailon, langostino amarillo y langostino colorado, a??o 2000">Evaluaci??n directa de camar??n nailon, langostino amarillo y langostino colorado, a??o 2000</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino amarillo y langostino colorado entre II y VIII Regiones, a??o 2011">Evaluaci??n directa de langostino amarillo y langostino colorado entre II y VIII Regiones, a??o 2011</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2005">Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2005</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2007">Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2007</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2008">Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2008</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2012">Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2012</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2013">Evaluaci??n directa de langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2013</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2001">Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2001</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2002">Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2002</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2004">Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2004</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2009">Evaluaci??n directa de langostino colorado y langostino amarillo entre la II y VIII Regiones, a??o 2009</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa de merluza com??n, a??o 2013">Evaluaci??n directa de merluza com??n, a??o 2013</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n directa langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2006">Evaluaci??n directa langostino amarillo y langostino colorado entre la II y VIII Regiones, a??o 2006</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n hidroac??stica de merluza com??n, a??o 2007">Evaluaci??n hidroac??stica de merluza com??n, a??o 2007</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n hidroac??stica de merluza com??n, a??o 2009">Evaluaci??n hidroac??stica de merluza com??n, a??o 2009</option>';
+            datasetName_options_str  += '<option value="Evaluaci??n hidroac??stica del reclutamiento de anchoveta entre la I y II Regiones, a??o 2007">Evaluaci??n hidroac??stica del reclutamiento de anchoveta entre la I y II Regiones, a??o 2007</option>';
+            datasetName_options_str  += '<option value="Fish">Fish</option>';
+            datasetName_options_str  += '<option value="Fish (Ichtylogy) collection, Bergen">Fish (Ichtylogy) collection, Bergen</option>';
+            datasetName_options_str  += '<option value="Fish Collection at UiT (Troms??)">Fish Collection at UiT (Troms??)</option>';
+            datasetName_options_str  += '<option value="Fishes of Texas Project">Fishes of Texas Project</option>';
+            datasetName_options_str  += '<option value="Formaci??n de una base de datos de la biodiversidad de fauna marina y costera en el Golfo de California">Formaci??n de una base de datos de la biodiversidad de fauna marina y costera en el Golfo de California</option>';
+            datasetName_options_str  += '<option value="Ghent university - Zoology Museum - Vertebrate Collection">Ghent university - Zoology Museum - Vertebrate Collection</option>';
+            datasetName_options_str  += '<option value="Hard Bottom Longline Hook Survey - Outside South">Hard Bottom Longline Hook Survey - Outside South</option>';
+            datasetName_options_str  += '<option value="Hecate Strait Synoptic Bottom Trawl Survey">Hecate Strait Synoptic Bottom Trawl Survey</option>';
+            datasetName_options_str  += '<option value="Ichthyology">Ichthyology</option>';
+            datasetName_options_str  += '<option value="Kartleggingsmidler Sabima">Kartleggingsmidler Sabima</option>';
+            datasetName_options_str  += '<option value="LACM Vertebrates">LACM Vertebrates</option>';
+            datasetName_options_str  += '<option value="MARITIMES 4VSW RESEARCH VESSEL SURVEY">MARITIMES 4VSW RESEARCH VESSEL SURVEY</option>';
+            datasetName_options_str  += '<option value="MARITIMES FALL RESEARCH VESSEL SURVEY">MARITIMES FALL RESEARCH VESSEL SURVEY</option>';
+            datasetName_options_str  += '<option value="MARITIMES SPRING RESEARCH VESSEL SURVEY">MARITIMES SPRING RESEARCH VESSEL SURVEY</option>';
+            datasetName_options_str  += '<option value="MARITIMES SUMMER RESEARCH VESSEL SURVEY">MARITIMES SUMMER RESEARCH VESSEL SURVEY</option>';
+            datasetName_options_str  += '<option value="MBIS Soviet Trawl Data data in New Zealand 1964-87">MBIS Soviet Trawl Data data in New Zealand 1964-87</option>';
+            datasetName_options_str  += '<option value="MBIS research trawl surveys">MBIS research trawl surveys</option>';
+            datasetName_options_str  += '<option value="Marine Biological Reference Collections ICM-CSIC">Marine Biological Reference Collections ICM-CSIC</option>';
+            datasetName_options_str  += '<option value="Marine Biological Sample Database, JAMSTEC">Marine Biological Sample Database, JAMSTEC</option>';
+            datasetName_options_str  += '<option value="Marinkurs SABIMA">Marinkurs SABIMA</option>';
+            datasetName_options_str  += '<option value="NCSM Ichthyology Collection">NCSM Ichthyology Collection</option>';
+            datasetName_options_str  += '<option value="NMNH Extant Biology">NMNH Extant Biology</option>';
+            datasetName_options_str  += '<option value="NMNH Material Samples (USNM)">NMNH Material Samples (USNM)</option>';
+            datasetName_options_str  += '<option value="NTNU Institutt for biologiske fag ?�lesund - Tokt Marin Biologi">NTNU Institutt for biologiske fag ?�lesund - Tokt Marin Biologi</option>';
+            datasetName_options_str  += '<option value="NZ research trawl surveys since 2008">NZ research trawl surveys since 2008</option>';
+            datasetName_options_str  += '<option value="Natural History Museum Denmark;Ichthyology">Natural History Museum Denmark;Ichthyology</option>';
+            datasetName_options_str  += '<option value="Northern Gulf of St. Lawrence Fishes">Northern Gulf of St. Lawrence Fishes</option>';
+            datasetName_options_str  += '<option value="Nova Scotia Museum - Marine Birds, Mammals, and Fishes">Nova Scotia Museum - Marine Birds, Mammals, and Fishes</option>';
+            datasetName_options_str  += '<option value="Ocean Genome Legacy Collection">Ocean Genome Legacy Collection</option>';
+            datasetName_options_str  += '<option value="Oregon State Ichthyology Collection">Oregon State Ichthyology Collection</option>';
+            datasetName_options_str  += '<option value="PAR?�METROS BIOL?�GICO PESQUEROS DE CONGRIO DORADO AL NORTE DE LA UNIDAD DE PESQUER?�A SUR AUSTRAL">PAR?�METROS BIOL?�GICO PESQUEROS DE CONGRIO DORADO AL NORTE DE LA UNIDAD DE PESQUER?�A SUR AUSTRAL</option>';
+            datasetName_options_str  += '<option value="Palaeobiology - Vertebrate Fossils Collection Non Mammalia">Palaeobiology - Vertebrate Fossils Collection Non Mammalia</option>';
+            datasetName_options_str  += '<option value="Par?�metros biol??gico pesqueros de congrio dorado al norte de la unidad de pesquer?�a sur austral">Par?�metros biol??gico pesqueros de congrio dorado al norte de la unidad de pesquer?�a sur austral</option>';
+            datasetName_options_str  += '<option value="Queen Charlotte Sound Synoptic Bottom Trawl Survey">Queen Charlotte Sound Synoptic Bottom Trawl Survey</option>';
+            datasetName_options_str  += '<option value="Redise??o de las redes de arrastre de crust?�ceos">Redise??o de las redes de arrastre de crust?�ceos</option>';
+            datasetName_options_str  += '<option value="Registros ictiofaun?�sticos de localidades selectas de 10 regiones marinas prioritarias del Pac?�fico Mexicano">Registros ictiofaun?�sticos de localidades selectas de 10 regiones marinas prioritarias del Pac?�fico Mexicano</option>';
+            datasetName_options_str  += '<option value="Royal Belgian Institute of Natural Sciences Collection">Royal Belgian Institute of Natural Sciences Collection</option>';
+            datasetName_options_str  += '<option value="S03/84">S03/84</option>';
+            datasetName_options_str  += '<option value="SAIAB stereo-BRUVs of Marine Fish: Tsitsikamma MPA">SAIAB stereo-BRUVs of Marine Fish: Tsitsikamma MPA</option>';
+            datasetName_options_str  += '<option value="SLOPE">SLOPE</option>';
+            datasetName_options_str  += '<option value="Saltvannfisk">Saltvannfisk</option>';
+            datasetName_options_str  += '<option value="Scientific Results of the New Zealand Government Trawling Expedition, 1907">Scientific Results of the New Zealand Government Trawling Expedition, 1907</option>';
+            datasetName_options_str  += '<option value="Selectividad de redes de arrastre en la pesquer?�a de camar??n nailon">Selectividad de redes de arrastre en la pesquer?�a de camar??n nailon</option>';
+            datasetName_options_str  += '<option value="Selectividad en redes de arrastre en uso en la pesquer?�a de merluza com??n: su efecto en la explotaci??n, en la fauna acompa??ante y en la captura incidental">Selectividad en redes de arrastre en uso en la pesquer?�a de merluza com??n: su efecto en la explotaci??n, en la fauna acompa??ante y en la captura incidental</option>';
+            datasetName_options_str  += '<option value="Soela Voyage SO 5/84">Soela Voyage SO 5/84</option>';
+            datasetName_options_str  += '<option value="Species list recorded by baited cameras at deep sea area in Japan">Species list recorded by baited cameras at deep sea area in Japan</option>';
+            datasetName_options_str  += '<option value="Str??mgrens planktonunders??kelser 1963-1974">Str??mgrens planktonunders??kelser 1963-1974</option>';
+            datasetName_options_str  += '<option value="UVICZL Fish">UVICZL Fish</option>';
+            datasetName_options_str  += '<option value="University of Alabama Ichthyology Collection">University of Alabama Ichthyology Collection</option>';
+            datasetName_options_str  += '<option value="University of Alberta Ichthyology Collection (UAMZ)">University of Alberta Ichthyology Collection (UAMZ)</option>';
+            datasetName_options_str  += '<option value="University of Kansas Biodiversity Institute Fish Tissue Collection">University of Kansas Biodiversity Institute Fish Tissue Collection</option>';
+            datasetName_options_str  += '<option value="University of Kansas Biodiversity Institute Fish Voucher Collection">University of Kansas Biodiversity Institute Fish Voucher Collection</option>';
+            datasetName_options_str  += '<option value="VIMS NorthEast Area Monitoring and Assessment Program">VIMS NorthEast Area Monitoring and Assessment Program</option>';
+            datasetName_options_str  += '<option value="West Coast Haida Gwaii Synoptic Bottom Trawl Survey">West Coast Haida Gwaii Synoptic Bottom Trawl Survey</option>';
+            datasetName_options_str  += '<option value="West Coast Vancouver Island Synoptic Bottom Trawl Survey">West Coast Vancouver Island Synoptic Bottom Trawl Survey</option>';
+            datasetName_options_str  += '<option value="Zietz collection">Zietz collection</option>';
+            datasetName_options_str  += '<option value="beamtrawl_2006-2024">beamtrawl_2006-2024</option>';
+            datasetName_options_str  += '<option value="grab_2006-2024">grab_2006-2024</option>';
+            datasetName_options_str  += '<option value="iNaturalist research-grade observations">iNaturalist research-grade observations</option>';
+            sel_datasetName.innerHTML = datasetName_options_str;
+            div_datasetName.appendChild(sel_datasetName);
+            var lab_datasetName = document.createElement('div');
+            lab_datasetName.innerHTML = 'datasetName';
+            lab_datasetName.className = 'filterlabel';
+            div_datasetName.appendChild(lab_datasetName);
+            var reset_datasetName = document.createElement('div');
+            reset_datasetName.innerHTML = 'clear filter';
+            reset_datasetName.className = 'filterlabel';
+            reset_datasetName.onclick = function() {
+                var options = document.getElementById("sel_datasetName").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_datasetName.appendChild(reset_datasetName);
+        </script>
+    </body>
+</html>
